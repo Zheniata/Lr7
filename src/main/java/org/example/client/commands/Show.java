@@ -8,9 +8,9 @@ import javax.imageio.IIOException;
 import java.io.IOException;
 
 public class Show extends Command{
-    ClientNetworkManager networkManager;
+
     public Show(ClientNetworkManager networkManager){
-        this.networkManager = networkManager;
+        super(networkManager);
     }
 
     @Override

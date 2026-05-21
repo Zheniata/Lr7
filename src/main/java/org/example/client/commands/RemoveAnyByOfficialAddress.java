@@ -5,9 +5,8 @@ import org.example.common.Request;
 import org.example.common.Response;
 
 public class RemoveAnyByOfficialAddress extends Command{
-    ClientNetworkManager clientNetworkManager;
-    public RemoveAnyByOfficialAddress(ClientNetworkManager clientNetworkManager){
-        this.clientNetworkManager = clientNetworkManager;
+    public RemoveAnyByOfficialAddress(ClientNetworkManager networkManager){
+        super(networkManager);
     }
 
     @Override
@@ -20,7 +19,7 @@ public class RemoveAnyByOfficialAddress extends Command{
 
             String street = argument.trim();
             Request request = new Request("remove_any_by_official_address", street, null);
-            Response response = clientNetworkManager.sendRequest(request);
+            Response response = networkManager.sendRequest(request);
             System.out.println(response.getMessage());
         } catch (Exception e) {
             System.out.println("Произошла: " + e.getMessage());

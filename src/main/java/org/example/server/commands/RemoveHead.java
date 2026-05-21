@@ -30,7 +30,7 @@ public class RemoveHead extends Command{
                 return new Response(false, "Нет прав на удаление", null);
             }
 
-            boolean success = collectionManager.removeById(head.getId());
+            boolean success = collectionManager.removeById(head.getId(), user.getId());
             if (success) {
                 return new Response(true, "Первый элемент коллекции удалён:\n" + head, null);
             } else {

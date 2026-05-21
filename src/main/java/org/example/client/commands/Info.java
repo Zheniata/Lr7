@@ -7,9 +7,9 @@ import org.example.common.Response;
 import java.io.IOException;
 
 public class Info extends Command{
-    ClientNetworkManager networkManager;
+
     public Info(ClientNetworkManager networkManager){
-        this.networkManager = networkManager;
+        super(networkManager);
     }
 
     @Override

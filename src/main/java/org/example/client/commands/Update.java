@@ -14,10 +14,9 @@ import org.example.common.models.Coordinates;
 import java.util.Scanner;
 
 public class Update extends Command{
-    ClientNetworkManager clientNetworkManager;
     Scanner scanner;
-    public Update(Scanner scanner, ClientNetworkManager clientNetworkManager){
-        this.clientNetworkManager = clientNetworkManager;
+    public Update(Scanner scanner, ClientNetworkManager networkManager){
+        super(networkManager);
         this.scanner = scanner;
     }
 
@@ -35,7 +34,7 @@ public class Update extends Command{
             Organization updatedOrg = updatedOrganization(idArg);
 
             Request request = new Request("update", idArg,  updatedOrg);
-            Response response = clientNetworkManager.sendRequest(request);
+            Response response = networkManager.sendRequest(request);
             System.out.println(response.getMessage());
         } catch (Exception e){
             System.out.println("Произошла ошибка: " + e.getMessage());

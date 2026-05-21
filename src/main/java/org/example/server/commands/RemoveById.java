@@ -32,7 +32,7 @@ public class RemoveById extends Command {
             if (!collectionManager.isOwner(id, user.getId())) {
                 return new Response(false, "Нет прав на удаление этой организации", null);
             }
-            boolean success = collectionManager.removeById(id);
+            boolean success = collectionManager.removeById(id, user.getId());
             if (success) {
                 return new Response(true, "Организация с id=" + id + " удалена", null);
             } else {

@@ -7,36 +7,38 @@ import org.example.common.util.SerializationUtil;
 import org.example.server.handlers.RequestHandler;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
+import java.util.UUID;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
-
-/**
- * Менеджер сетевого взаимодействия для сервера.
- * Принимает подключения клиентов, читает запросы, передаёт их на обработку
- * и отправляет ответы. Использует неблокирующий I/O (Java NIO) с Selector
- * для обслуживания множества клиентов в одном потоке.
- */
 
 public class ServerNetworkManager {
     private ServerSocketChannel serverChannel;
     private int port;
     private Selector selector;
     private static final int BUFFER_SIZE = 8192;
-    private static final Logger logger = LoggerUtil.getLogger();
+    private final Map<SocketChannel, String> clientIds = new ConcurrentHashMap<>();
+
+
+    private final ExecutorService acceptThreadPool;
+    private final ForkJoinPool processThreadPool;
+    private final ForkJoinPool sendThreadPool;
 
     public ServerNetworkManager(int port) {
         this.port = port;
+        this.acceptThreadPool = Executors.newCachedThreadPool();
+        this.processThreadPool = new ForkJoinPool();
+        this.sendThreadPool = new ForkJoinPool();
+
+        System.out.println("Пулы потоков создны");
     }
 
     /**
@@ -46,8 +48,8 @@ public class ServerNetworkManager {
 
     public void start(RequestHandler handler){
         try {
-            logger.info("Запуск сервера на порту " + port);
-            logger.fine("Инициализация ServerSocketChannel");
+            System.out.println("Запуск сервера на порту " + port);
+            System.out.println("Инициализация ServerSocketChannel");
 
             serverChannel = ServerSocketChannel.open();
             serverChannel.configureBlocking(false);
@@ -56,12 +58,12 @@ public class ServerNetworkManager {
             selector = Selector.open();
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-            logger.info("Сервер запущен и ожидает подключений на порту " + port);
-            logger.fine("Selector инициализирован, зарегистрирован OP_ACCEPT");
+            System.out.println("Сервер запущен и ожидает подключений на порту " + port);
+            System.out.println("Selector инициализирован, зарегистрирован OP_ACCEPT");
 
 
             while (true) {
-                logger.finer("Ожидание от selector...");
+                System.out.println("Ожидание от selector...");
                 selector.select();
 
                 Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -74,28 +76,36 @@ public class ServerNetworkManager {
                     try {
                         if (key.isAcceptable()) {
                             handleAccept(key);
-                            logger.fine("Получено событие OP_ACCEPT");
+                            System.out.println("Получено событие OP_ACCEPT");
                         }
                         if (key.isReadable()) {
-                            handleRead(key, handler);
-                            logger.fine("Получено событие OP_READ");
+                            acceptThreadPool.submit(() -> {
+                                try {
+                                    handleRead(key, handler);
+                                } catch (Exception e) {
+                                    System.err.println("Ошибка чтения: " + e.getMessage());
+                                    key.cancel();
+                                }
+                            });
                         }
+
+
                     } catch (Exception e) {
-                        logger.log(Level.SEVERE, "Ошибка обработки ключа: " + e.getMessage(), e);
+                        System.out.println("Ошибка обработки ключа: " + e.getMessage());
                         e.printStackTrace();
                         key.cancel();
                         try { key.channel().close();
                         } catch (IOException ex) {
-                            logger.log(Level.WARNING, "Ошибка при закрытии канала: " + ex.getMessage());
+                            System.out.println("Ошибка при закрытии канала: " + ex.getMessage());
                         }
                     }
                 }
             }
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "Критическая ошибка сервера: " + e.getMessage(), e);
+            System.out.println("Критическая ошибка сервера: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            logger.info("Завершение работы сервера");
+            System.out.println("Завершение работы сервера");
             stop();
         }
     }
@@ -107,18 +117,22 @@ public class ServerNetworkManager {
      */
 
     private void handleAccept(SelectionKey key) throws IOException{
-        logger.fine("Обработка нового подключения");
+        System.out.println("Обработка нового подключения");
         ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
         SocketChannel clientChannel = serverChannel.accept();
 
         if (clientChannel != null) {
             clientChannel.configureBlocking(false);
             clientChannel.register(selector, SelectionKey.OP_READ, ByteBuffer.allocate(BUFFER_SIZE));
-            logger.info("Новое подключение от клиента: " + clientChannel.getRemoteAddress());
-            logger.fine("Клиент зарегистрирован на OP_READ, выделен буфер " + BUFFER_SIZE + " байт");
+            System.out.println("Новое подключение от клиента: " + clientChannel.getRemoteAddress());
+
+            String clientId = UUID.randomUUID().toString();
+            clientIds.put(clientChannel, clientId);
+
+            System.out.println("Клиент зарегистрирован на OP_READ, выделен буфер " + BUFFER_SIZE + " байт");
 
         }else {
-            logger.warning("Не удалось принять подключение (clientChannel == null)");
+            System.out.println("Не удалось принять подключение (clientChannel == null)");
         }
     }
 
@@ -130,26 +144,33 @@ public class ServerNetworkManager {
      */
 
     private void handleRead(SelectionKey key, RequestHandler handler) throws IOException, ClassNotFoundException {
-        logger.fine("Чтение данных от клиента");
-        SocketChannel clientChannel = (SocketChannel) key.channel();
+        System.out.println("Чтение данных от клиента");
+        final SocketChannel clientChannel = (SocketChannel) key.channel();
+        String clientId = clientIds.get(clientChannel);
         ByteBuffer buffer = (ByteBuffer) key.attachment();
 
         int bytesRead = clientChannel.read(buffer);
         if (bytesRead == -1) {
+            if (clientId != null) {
+                handler.removeSession(clientId);
+                clientIds.remove(clientChannel);
+                System.out.println("Клиент отключился: " + clientChannel.getRemoteAddress() + " sessionId удалена: " + clientId);
+            } else {
+                System.out.println("Клиент отключился: " + clientChannel.getRemoteAddress());
+            }
             key.cancel();
             clientChannel.close();
-            logger.info("Клиент отключился: " + clientChannel.getRemoteAddress());
             return;
         }
 
         if (bytesRead > 0) {
-            logger.finer("Прочитано " + bytesRead + " байт");
+            System.out.println("Прочитано " + bytesRead + " байт");
             buffer.flip();
 
             while (true) {
 
                 if (buffer.remaining() < 4) {
-                    logger.finer("Неполные данные в буфере (менее 4 байт), ожидание...");
+                    System.out.println("Неполные данные в буфере (менее 4 байт), ожидание...");
                     break;
                 }
 
@@ -157,27 +178,43 @@ public class ServerNetworkManager {
                 int length = buffer.getInt();
 
                 if (buffer.remaining() >= length) {
-                    logger.fine("Полное сообщение получено, размер: " + length + " байт");
+                    System.out.println("Полное сообщение получено, размер: " + length + " байт");
                     buffer.reset();
                     buffer.reset();
 
                     Request request = (Request) SerializationUtil.deserialize(buffer);
-                    logger.info("Получен запрос от " + clientChannel.getRemoteAddress() +
+                    System.out.println("Получен запрос от " + clientChannel.getRemoteAddress() +
                             ": команда=" + request.getName() +
                             ", аргумент=" + request.getArgument());
 
-                    Response response = handler.handle(request);
-                    logger.info("Отправка ответа клиенту: " + response.getMessage());
-                    logger.fine("Статус ответа: " + (response.isSuccess() ? "успех" : "ошибка"));
+                    Future<Response> future = processThreadPool.submit(() -> {
+                        return handler.handle(request, clientId);
+                    });
 
-                    ByteBuffer responseBuffer = SerializationUtil.serialize(response);
-                    while (responseBuffer.hasRemaining()) {
-                        clientChannel.write(responseBuffer);
+                    Response response = null;
+                    try {
+                        response = future.get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        System.err.println("Ошибка обработки: " + e.getMessage());
+                        response = new Response(false, "Ошибка обработки запроса", null);
                     }
-                    logger.finer("Ответ успешно отправлен");
+
+                    System.out.println("Отправка ответа клиенту...");
+
+                    final Response finalResponse = response;
+                    sendThreadPool.submit(() -> {
+                        try {
+                            ByteBuffer responseBuffer = SerializationUtil.serialize(finalResponse);
+                            while (responseBuffer.hasRemaining()) {
+                                clientChannel.write(responseBuffer);
+                            }
+                            System.out.println("Ответ отправлен");
+                        } catch (IOException e) {
+                            System.err.println("Ошибка отправки ответа: " + e.getMessage());
+                        }
+                    });
 
                 } else {
-                    logger.finer("Данных недостаточно для полного сообщения, ожидание следующей части");
                     buffer.reset();
                     break;
                 }
@@ -192,18 +229,40 @@ public class ServerNetworkManager {
 
 
     public void stop(){
+        System.out.println("Завершение работы сервера...");
+
+        acceptThreadPool.shutdown();
+        processThreadPool.shutdown();
+        sendThreadPool.shutdown();
+
+        try {
+            if (!acceptThreadPool.awaitTermination(5, TimeUnit.SECONDS)) {
+                acceptThreadPool.shutdownNow();
+            }
+            if (!processThreadPool.awaitTermination(5, TimeUnit.SECONDS)) {
+                processThreadPool.shutdownNow();
+            }
+            if (!sendThreadPool.awaitTermination(5, TimeUnit.SECONDS)) {
+                sendThreadPool.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            acceptThreadPool.shutdownNow();
+            processThreadPool.shutdownNow();
+            sendThreadPool.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
         try {
             if (selector != null) {
                 selector.close();
-                logger.fine("Selector закрыт");
+                System.out.println("Selector закрыт");
             }
             if (serverChannel != null) {
                 serverChannel.close();
-                logger.fine("ServerSocketChannel закрыт");
+                System.out.println("ServerSocketChannel закрыт");
             }
-            logger.info("Сервер остановлен");
+            System.out.println("Сервер остановлен");
         } catch (IOException e) {
-            logger.log(Level.WARNING, "Ошибка при остановке сервера: " + e.getMessage(), e);
+            System.out.println("Ошибка при остановке сервера: " + e.getMessage());
             System.err.println("Ошибка при остановке: " + e.getMessage());
         }
     }

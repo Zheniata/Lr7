@@ -50,7 +50,7 @@ public class RemoveAnyByOfficialAddress extends Command{
             if (toRemove == null) {
                 return new Response(true, "Элемент с улицей: " + street + " не найден", null);
             } else {
-                boolean success = collectionManager.removeById(toRemove.getId());
+                boolean success = collectionManager.removeById(toRemove.getId(), user.getId());
                 if (success) {
                     return new Response(true, "Элемент с адресом: " + street + " удалён", null);
                 } else {

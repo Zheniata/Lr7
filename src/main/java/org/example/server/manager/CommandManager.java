@@ -1,5 +1,6 @@
 package org.example.server.manager;
 
+import org.example.server.commands.*;
 import org.example.server.commands.Command;
 
 import java.nio.file.Path;
@@ -10,15 +11,22 @@ public class CommandManager {
     private List<String> commandHistory = new ArrayList<>();
     private final Set<Path> executingScripts = new HashSet<>();
 
-    /**
-     * Регистрирует новую команду в менеджере.
-     *
-     * @param name    имя команды (должно совпадать с тем, что пользователь вводит в консоли)
-     * @param command экземпляр команды
-     */
-
-    public void register(String name, Command command){
-        commands.put(name, command);
+    public CommandManager(CollectionManager collectionManager, AuthManager authManager){
+        commands.put("help", new Help());
+        commands.put("info", new Info(collectionManager));
+        commands.put("show", new Show(collectionManager));
+        commands.put("add", new Add(collectionManager));
+        commands.put("update", new Update(collectionManager));
+        commands.put("remove_by_id", new RemoveById(collectionManager));
+        commands.put("clear", new Clear(collectionManager));
+        commands.put("remove_head", new RemoveHead(collectionManager));
+        commands.put("remove_greater", new RemoveGreater(collectionManager));
+        commands.put("remove_any_by_official_address", new RemoveAnyByOfficialAddress(collectionManager));
+        commands.put("print_descending", new PrintDescending(collectionManager));
+        commands.put("print_field_descending_type", new PrintFieldDescendingType(collectionManager));
+        commands.put("history", new History(this));
+        commands.put("login", new Login(authManager));
+        commands.put("register", new Register(authManager));
     }
 
     /**
@@ -64,36 +72,5 @@ public class CommandManager {
         if (commandHistory.size() > 6){
             commandHistory.remove(0);
         }
-    }
-
-    /**
-     * Проверяет, выполняется ли в данный момент скрипт по указанному пути.
-     *
-     * @param path путь к файлу скрипта
-     * @return {@code true}, если скрипт уже выполняется; иначе {@code false}
-     */
-
-    public boolean isExecuteScript(Path path){
-        return executingScripts.contains(path);
-    }
-
-    /**
-     * Добавляет путь к скрипту в множество выполняемых.
-     *
-     * @param path путь к файлу скрипта
-     */
-
-    public void addToExecuteScript(Path path){
-        executingScripts.add(path);
-    }
-
-    /**
-     * Удаляет путь к скрипту из множества выполняемых
-     *
-     * @param path путь к файлу скрипта
-     */
-
-    public void removeFromExecuteScript(Path path){
-        executingScripts.remove(path);
     }
 }

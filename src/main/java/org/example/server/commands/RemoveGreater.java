@@ -42,7 +42,7 @@ public class RemoveGreater extends Command{
                         continue;
                     }
 
-                    boolean success = collectionManager.removeById(org.getId());
+                    boolean success = collectionManager.removeById(org.getId(), user.getId());
                     if (success) {
                         removedCount++;
                     }

@@ -7,16 +7,15 @@ import org.example.common.Response;
 import java.io.IOException;
 
 public class PrintFieldDescendingType extends Command{
-    ClientNetworkManager clientNetworkManager;
-    public PrintFieldDescendingType(ClientNetworkManager clientNetworkManager){
-        this.clientNetworkManager = clientNetworkManager;
+    public PrintFieldDescendingType(ClientNetworkManager networkManager){
+        super(networkManager);
     }
 
     @Override
     public void execute(String argument) {
         try{
             Request request = new Request("print_field_descending_type", null, null);
-            Response response = clientNetworkManager.sendRequest(request);
+            Response response = networkManager.sendRequest(request);
             System.out.println(response.getMessage());
             if (response.getData() != null){
                 System.out.println(response.getData());

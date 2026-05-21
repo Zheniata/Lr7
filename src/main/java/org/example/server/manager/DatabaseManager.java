@@ -1,5 +1,6 @@
 package org.example.server.manager;
 
+import org.example.common.User;
 import org.example.common.models.Coordinates;
 import org.example.common.models.Organization;
 import org.example.common.models.OrganizationType;
@@ -49,7 +50,7 @@ public class DatabaseManager {
     public long saveOrganization(Organization organization, Long ownerId) throws SQLException{
 
         String sql = "INSERT INTO organizations (name, coordinates_x, coordinates_y, annual_turnover, type, owner_id) " +
-                "VALUES (?, ?, ?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?, ?::organization_type, ?)";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql,
                 Statement.RETURN_GENERATED_KEYS)){
@@ -84,8 +85,8 @@ public class DatabaseManager {
     }
 
     public boolean updateOrganization(Organization org) throws SQLException{
-        String sql = "UPDATE organization SET name = ?, coordinates_x = ?, coordinates_y = ?, annual_turnover = ?," +
-                "type = ? WHERE id = ?";
+        String sql = "UPDATE organizations SET name = ?, coordinates_x = ?, coordinates_y = ?, annual_turnover = ?," +
+                "type = ?::organization_type WHERE id = ?";
         try (PreparedStatement prt = connection.prepareStatement(sql)){
             prt.setString(1, org.getName());
             Coordinates coords = org.getCoordinates();
@@ -113,7 +114,7 @@ public class DatabaseManager {
     }
 
     public boolean deleteOrganization(long id) throws SQLException{
-        String sql = "DELETE FROM organization WHERE id = ?";
+        String sql = "DELETE FROM organizations WHERE id = ?";
         try (PreparedStatement prt = connection.prepareStatement(sql)){
             prt.setLong(1, id);
             int count = prt.executeUpdate();
@@ -132,6 +133,46 @@ public class DatabaseManager {
         try (Statement stmt = connection.createStatement()){
              stmt.executeUpdate(sql);
              System.out.println("Все организации удалены");
+        }
+    }
+
+    public User getUserByLogin(String login) throws SQLException {
+        String query = "SELECT * FROM users WHERE login = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setString(1, login);
+            ResultSet res = stmt.executeQuery();
+
+            if (res.next()) {
+                User user = new User(
+                        res.getLong("id"),
+                        res.getString("login"),
+                        res.getString("password_hash"),
+                        res.getString("salt")
+                );
+                return user;
+            }
+            return null;
+        }
+    }
+
+    public long createUser(String login, String passwordHash, String salt) throws SQLException {
+        String query = "INSERT INTO users (login, password_hash, salt) VALUES (?, ?, ?)";
+        try (PreparedStatement stmt = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, login);
+            stmt.setString(2, passwordHash);
+            stmt.setString(3, salt);
+
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new SQLException("Не удалось создать пользователя: INSERT не выполнился");
+            }
+
+            ResultSet rs = stmt.getGeneratedKeys();
+            if (rs.next()) {
+                return rs.getLong(1);
+            } else {
+                throw new SQLException("Не удалось получить ID созданного пользователя");
+            }
         }
     }
 

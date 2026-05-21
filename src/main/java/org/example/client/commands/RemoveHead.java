@@ -7,16 +7,15 @@ import org.example.common.Response;
 import java.io.IOException;
 
 public class RemoveHead extends Command{
-    ClientNetworkManager clientNetworkManager;
-    public RemoveHead(ClientNetworkManager clientNetworkManager){
-        this.clientNetworkManager = clientNetworkManager;
+    public RemoveHead(ClientNetworkManager networkManager){
+        super(networkManager);
     }
 
     @Override
     public void execute(String argument) {
         try {
             Request request = new Request("remove_head", null, null);
-            Response response = clientNetworkManager.sendRequest(request);
+            Response response = networkManager.sendRequest(request);
             System.out.println(response.getMessage());
             if (response.getData() != null){
                 System.out.println(response.getData());

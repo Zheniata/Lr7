@@ -3,14 +3,19 @@ package org.example.common;
 import java.io.Serializable;
 
 public class User implements Serializable {
+    private static final long serialVersionUID = 1L;
     private long id;
     private String username;
-    private String password;
+    private String passwordHash;
+    private String salt;
 
-    public User(String username, String password) {
+    public User(long id, String username, String passwordHash, String salt) {
+        this.id = id;
         this.username = username;
-        this.password = password;
+        this.passwordHash = passwordHash;
+        this.salt = salt;
     }
+
 
     public long getId() {
         return id;
@@ -18,6 +23,10 @@ public class User implements Serializable {
 
     public void setId(long id) {
         this.id = id;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
     public String getUsername() {
@@ -28,11 +37,15 @@ public class User implements Serializable {
         this.username = username;
     }
 
-    public String getPassword() {
-        return password;
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public String getSalt() {
+        return salt;
+    }
+
+    public void setSalt(String salt) {
+        this.salt = salt;
     }
 }

@@ -7,9 +7,8 @@ import org.example.common.Response;
 import java.io.IOException;
 
 public class RemoveGreater extends Command{
-    private ClientNetworkManager clientNetworkManager;
-    public RemoveGreater(ClientNetworkManager clientNetworkManager){
-        this.clientNetworkManager = clientNetworkManager;
+    public RemoveGreater(ClientNetworkManager networkManager){
+        super(networkManager);
     }
 
     @Override
@@ -21,7 +20,7 @@ public class RemoveGreater extends Command{
             }
             String idArg = argument.trim();
             Request request = new Request("remove_greater", idArg, null);
-            Response response = clientNetworkManager.sendRequest(request);
+            Response response = networkManager.sendRequest(request);
             System.out.println(response.getMessage());
         } catch (IOException | ClassNotFoundException e){
             System.out.println("Произошла ошибка: " + e.getMessage());

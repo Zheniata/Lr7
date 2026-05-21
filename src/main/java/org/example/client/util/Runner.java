@@ -2,6 +2,8 @@ package org.example.client.util;
 
 import org.example.client.commands.*;
 import org.example.client.network.ClientNetworkManager;
+import org.example.common.Request;
+import org.example.common.Response;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,9 +14,11 @@ public class Runner {
     private final ClientNetworkManager networkManager;
     private final Map<String, Command> commands = new HashMap<>();
 
+
     public Runner(Scanner scanner, ClientNetworkManager networkManager) {
         this.scanner = scanner;
         this.networkManager = networkManager;
+
 
         commands.put("help", new Help(networkManager));
         commands.put("add", new Add(scanner, networkManager));
@@ -30,6 +34,8 @@ public class Runner {
         commands.put("remove_any_by_official_address", new RemoveAnyByOfficialAddress(networkManager));
         commands.put("update", new Update(scanner, networkManager));
         commands.put("execute_script", new ExecuteScript(networkManager, scanner));
+        commands.put("register", new Register(networkManager, scanner));
+        commands.put("login", new Login(networkManager, scanner));
         commands.put("exit", new Exit());
     }
 
@@ -46,12 +52,21 @@ public class Runner {
                     String[] parts = line.split(" ", 2);
                     String commandName = parts[0];
                     String argument = parts.length > 1 ? parts[1] : null;
+
                     Command command = commands.get(commandName);
+
                     if (command == null) {
-                        System.out.println("Неизвестная команда, введите еще раз");
+                        System.err.println("Неизвестная команда: " + commandName);
                         continue;
                     }
+
+                    if (commandName.equals("exit")) {
+                        break;
+                    }
+
                     command.execute(argument);
+
+
                 } catch (Exception e){
                     System.err.println("Ошибка: " + e.getMessage());
                 }

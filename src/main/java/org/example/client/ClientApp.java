@@ -12,16 +12,33 @@ public class ClientApp {
 
     public static void main(String[] args){
         Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Клиент запущен");
+        System.out.println("Подключение к серверу " + host + ":" + port + "...");
+
         ClientNetworkManager network = new ClientNetworkManager(host, port);
-        network.connect();
         try {
+            network.connect();
+            System.out.println("Подключено");
+
+            System.out.println("register - регестрация");
+            System.out.println("login - вход");
+
+
             Runner runner = new Runner(scanner, network);
             runner.interactiveMode();
-            network.disconnect();
-        } catch (Exception e){
+
+        } catch (Exception e) {
             System.err.println("Ошибка: " + e.getMessage());
             e.printStackTrace();
-            System.exit(1);
+        } finally {
+            try {
+                network.disconnect();
+                scanner.close();
+                System.out.println("Соединение закрыто");
+            } catch (IOException e) {
+                System.err.println("Ошибка при закрытии соединения: " + e.getMessage());
+            }
         }
 
     }

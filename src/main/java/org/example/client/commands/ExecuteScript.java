@@ -15,11 +15,10 @@ import java.util.Scanner;
 import java.util.Set;
 
 public class ExecuteScript extends Command{
-    ClientNetworkManager clientNetworkManager;
     Scanner scanner;
     Set<Path> executingScripts = new HashSet<>();
-    public ExecuteScript(ClientNetworkManager clientNetworkManager, Scanner scanner){
-        this.clientNetworkManager = clientNetworkManager;
+    public ExecuteScript(ClientNetworkManager networkManager, Scanner scanner){
+        super(networkManager);
         this.scanner = scanner;
     }
 
@@ -96,7 +95,7 @@ public class ExecuteScript extends Command{
             }
 
             Request request = new Request(commandName, commandArg, null);
-            Response response = clientNetworkManager.sendRequest(request);
+            Response response = networkManager.sendRequest(request);
 
             if (!response.getMessage().isEmpty()) {
                 System.out.println(response.getMessage());
@@ -115,7 +114,7 @@ public class ExecuteScript extends Command{
         Organization org = Add.parseOrganization(line);
 
         Request request = new Request("add", null, org);
-        Response response = clientNetworkManager.sendRequest(request);
+        Response response = networkManager.sendRequest(request);
 
         if (!response.getMessage().isEmpty()) {
             System.out.println(response.getMessage());

@@ -10,26 +10,29 @@ public class Request implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String name;
-    private Object argument;
+    private String argument;
     private Organization organization;
 
-    public Request(String name, Object argument, Organization organization){
+
+    public Request(String name, String argument, Organization organization){
         this.name = name;
         this.argument = argument;
         this.organization = organization;
+
     }
 
     public String getName() {
         return name;
     }
 
-    public Object getArgument() {
+    public String getArgument() {
         return argument;
     }
 
     public Organization getOrganization() {
         return organization;
     }
+
 
     @Override
     public String toString() {

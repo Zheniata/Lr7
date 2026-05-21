@@ -49,7 +49,7 @@ public class Update extends Command{
             newOrg.setCreationDate(oldOrg.getCreationDate());
             newOrg.setOwnerId(oldOrg.getOwnerId());
 
-            boolean success = collectionManager.update(newOrg);
+            boolean success = collectionManager.update(newOrg, user.getId());
             if (success) {
                 return new Response(true, "Организация с id=" + id + " обновлена", null);
             } else {

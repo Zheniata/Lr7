@@ -12,10 +12,9 @@ import java.time.LocalDate;
 import java.util.Scanner;
 
 public class Add extends Command{
-    private final ClientNetworkManager network;
-    private final Scanner scanner;
-    public Add(Scanner scanner, ClientNetworkManager network){
-        this.network = network;
+    private Scanner scanner;
+    public Add(Scanner scanner, ClientNetworkManager networkManager){
+        super(networkManager);
         this.scanner = scanner;
     }
 
@@ -30,7 +29,7 @@ public class Add extends Command{
                 organization = interactiveOrganization();
             }
             Request request = new Request("add", null, organization);
-            Response response = network.sendRequest(request);
+            Response response = networkManager.sendRequest(request);
             System.out.println(response.getMessage());
         } catch (Exception e) {
             System.out.println("Произошла ошибка: " + e.getMessage());

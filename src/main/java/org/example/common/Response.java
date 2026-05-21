@@ -9,11 +9,17 @@ public class Response implements Serializable {
     private boolean success;
     private String message;
     private Object data;
+    private User user;
 
-    public Response(boolean success, String message, Object data) {
+    public Response(boolean success, String message, Object data, User user) {
         this.success = success;
         this.message = message;
         this.data = data;
+        this.user = user;
+    }
+
+    public Response(boolean success, String message, Object data) {
+        this(success, message, data, null);
     }
 
     public boolean isSuccess() {
@@ -26,5 +32,9 @@ public class Response implements Serializable {
 
     public Object getData() {
         return data;
+    }
+
+    public User getUser() {
+        return user;
     }
 }
