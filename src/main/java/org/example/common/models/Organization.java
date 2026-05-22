@@ -34,6 +34,7 @@ public class Organization implements Comparable<Organization>, Serializable {
         this.annualTurnover = annualTurnover;
         this.type = type;
         this.officialAddress = officialAddress;
+        this.creationDate = LocalDate.now();
     }
 
     public long getId() {

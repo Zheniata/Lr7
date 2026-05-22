@@ -18,6 +18,7 @@ public class Address implements Serializable {
     public Address() {
     }
 
+
     public String getZipCode() {
         return zipCode;
     }

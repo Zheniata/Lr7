@@ -16,15 +16,18 @@ public class Update extends Command{
     @Override
     public Response execute(Request request, User user) {
         try {
+            if (user == null) {
+                return new Response(false, "Требуется авторизация", null);
+            }
+
+            String idStr = request.getArgument();
+            if (idStr == null || idStr.trim().isEmpty()) {
+                return new Response(false, "Использование: update <id>", null);
+            }
+
             long id;
             try {
-
-                Object arg = request.getArgument();
-                if (arg == null) {
-                    return new Response(false, "Укажите id организации", null);
-                }
-
-                id = Long.parseLong(arg.toString().trim());
+                id = Long.parseLong(idStr.trim());
             } catch (NumberFormatException e) {
                 return new Response(false, "id должен быть целым числом", null);
             }
@@ -38,7 +41,9 @@ public class Update extends Command{
                 return new Response(false, "Нет прав на обновление этой организации", null);
             }
 
-
+            if (request.getOrganization() == null) {
+                return new Response(true, null, null);
+            }
 
             Organization newOrg = request.getOrganization();
             if (newOrg == null) {

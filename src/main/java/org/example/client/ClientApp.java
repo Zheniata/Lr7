@@ -14,14 +14,12 @@ public class ClientApp {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Клиент запущен");
-        System.out.println("Подключение к серверу " + host + ":" + port + "...");
 
         ClientNetworkManager network = new ClientNetworkManager(host, port);
         try {
             network.connect();
-            System.out.println("Подключено");
-
-            System.out.println("register - регестрация");
+            System.out.println(" ");
+            System.out.println("register - регистрация");
             System.out.println("login - вход");
 
 

@@ -4,6 +4,7 @@ import org.example.common.User;
 import org.example.common.models.Coordinates;
 import org.example.common.models.Organization;
 import org.example.common.models.OrganizationType;
+import org.example.common.models.Address;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -40,6 +41,12 @@ public class DatabaseManager {
                      organization.setCoordinates(new Coordinates(x, y));
                  }
 
+                 String street = res.getString("street");
+                 String zipCode = res.getString("zip_code");
+                 if (street != null || zipCode != null) {
+                     organization.setOfficialAddress(new Address(street, zipCode));
+                 }
+
                  list.add(organization);
              }
         }
@@ -49,8 +56,8 @@ public class DatabaseManager {
 
     public long saveOrganization(Organization organization, Long ownerId) throws SQLException{
 
-        String sql = "INSERT INTO organizations (name, coordinates_x, coordinates_y, annual_turnover, type, owner_id) " +
-                "VALUES (?, ?, ?, ?, ?::organization_type, ?)";
+        String sql = "INSERT INTO organizations (name, coordinates_x, coordinates_y, annual_turnover, type, owner_id, street, zip_code, creation_date) " +
+                "VALUES (?, ?, ?, ?, ?::organization_type, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql,
                 Statement.RETURN_GENERATED_KEYS)){
@@ -67,6 +74,21 @@ public class DatabaseManager {
             pstmt.setFloat(4, organization.getAnnualTurnover());
             pstmt.setString(5, organization.getType().name());
             pstmt.setLong(6, ownerId);
+
+            Address address = organization.getOfficialAddress();
+            if (address != null) {
+                pstmt.setString(7, address.getStreet());
+                pstmt.setString(8, address.getZipCode());
+            } else {
+                pstmt.setNull(7, Types.VARCHAR);
+                pstmt.setNull(8, Types.VARCHAR);
+            }
+
+            if (organization.getCreationDate() != null) {
+                pstmt.setObject(9, organization.getCreationDate(), Types.DATE);
+            } else {
+                pstmt.setNull(9, Types.DATE);
+            }
 
             int affectedRows = pstmt.executeUpdate();
 
@@ -86,7 +108,7 @@ public class DatabaseManager {
 
     public boolean updateOrganization(Organization org) throws SQLException{
         String sql = "UPDATE organizations SET name = ?, coordinates_x = ?, coordinates_y = ?, annual_turnover = ?," +
-                "type = ?::organization_type WHERE id = ?";
+                "type = ?::organization_type, street = ?, zip_code = ? WHERE id = ?";
         try (PreparedStatement prt = connection.prepareStatement(sql)){
             prt.setString(1, org.getName());
             Coordinates coords = org.getCoordinates();
@@ -99,7 +121,17 @@ public class DatabaseManager {
             }
             prt.setFloat(4, org.getAnnualTurnover());
             prt.setString(5, org.getType() != null ? org.getType().name() : null);
-            prt.setLong(6, org.getId());
+
+            Address address = org.getOfficialAddress();
+            if (address != null) {
+                prt.setString(6, address.getStreet());
+                prt.setString(7, address.getZipCode());
+            } else {
+                prt.setNull(6, Types.VARCHAR);
+                prt.setNull(7, Types.VARCHAR);
+            }
+
+            prt.setLong(8, org.getId());
 
             int count = prt.executeUpdate();
             boolean success = count > 0;
@@ -125,14 +157,6 @@ public class DatabaseManager {
                 System.out.println("Организация с id = " + id + "не найдена");
             }
             return success;
-        }
-    }
-
-    public void clearAllOrganizations() throws SQLException{
-        String sql = "DELETE FROM organization";
-        try (Statement stmt = connection.createStatement()){
-             stmt.executeUpdate(sql);
-             System.out.println("Все организации удалены");
         }
     }
 

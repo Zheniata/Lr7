@@ -26,5 +26,7 @@ coordinates_y BIGINT,
 annual_turnover FLOAT CHECK (annual_turnover >= 0),
 type organization_type NOT NULL,
 owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+street TEXT,
+zip_code VARCHAR(20)
 );

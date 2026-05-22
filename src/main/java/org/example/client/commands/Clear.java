@@ -7,7 +7,6 @@ import org.example.common.Response;
 import java.io.IOException;
 
 public class Clear extends Command{
-    ClientNetworkManager networkManager;
     public Clear(ClientNetworkManager networkManager){
         super(networkManager);
     }

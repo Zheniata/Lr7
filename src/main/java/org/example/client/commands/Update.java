@@ -27,14 +27,31 @@ public class Update extends Command{
                 System.out.println("Неверный формат команды, введите id");
                 return;
             }
-            String idArg = argument.trim().toLowerCase()
-                    .replaceAll("^id\\s+", "")
-                    .trim();;
 
-            Organization updatedOrg = updatedOrganization(idArg);
+            String idStr = argument.trim();
+            long id;
+            try {
+                id = Long.parseLong(idStr);
+            } catch (NumberFormatException e) {
+                System.err.println("id должен быть числом");
+                return;
+            }
 
-            Request request = new Request("update", idArg,  updatedOrg);
+
+            Request checkRequest = new Request("update", idStr, null);
+            Response checkResponse = networkManager.sendRequest(checkRequest);
+
+            if (!checkResponse.isSuccess()) {
+                System.out.println(checkResponse.getMessage());
+                return;
+            }
+
+            Organization updatedOrg = updatedOrganization(idStr);
+
+            Request request = new Request("update", idStr,  updatedOrg);
             Response response = networkManager.sendRequest(request);
+
+
             System.out.println(response.getMessage());
         } catch (Exception e){
             System.out.println("Произошла ошибка: " + e.getMessage());
