@@ -46,6 +46,10 @@ public class DatabaseManager {
                  if (street != null || zipCode != null) {
                      organization.setOfficialAddress(new Address(street, zipCode));
                  }
+                 Timestamp creationDateTimestamp = res.getTimestamp("creation_date");
+                 if (creationDateTimestamp != null) {
+                     organization.setCreationDate(creationDateTimestamp.toLocalDateTime().toLocalDate());
+                 }
 
                  list.add(organization);
              }
